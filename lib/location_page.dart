@@ -1,8 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class LocationPage extends StatefulWidget {
   const LocationPage({Key? key}) : super(key: key);
@@ -14,7 +17,18 @@ class LocationPage extends StatefulWidget {
 class _LocationPageState extends State<LocationPage> {
   String? _currentAddress;
   Position? _currentPosition;
+    //inital location
+  late LatLng _initialPosition;
+    /// Current map zoom. Initial zoom will be 15, street level
+  double _currentZoom = 8;
+    Map<MarkerId, Marker> markers = <MarkerId, Marker>{}; // 
+    //map controller
+  final Completer<GoogleMapController> _mapController = Completer();
+    /// Map loading flag
+  bool _isMapLoading = true;
 
+
+  
   Future<bool> _handleLocationPermission() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -60,7 +74,9 @@ class _LocationPageState extends State<LocationPage> {
   Future<void> _getAddressFromLatLng(Position position) async {
     await placemarkFromCoordinates(
             _currentPosition!.latitude, _currentPosition!.longitude)
+            
         .then((List<Placemark> placemarks) {
+           _initialPosition = LatLng( _currentPosition!.latitude, _currentPosition!.longitude);
       Placemark place = placemarks[0];
       setState(() {
         _currentAddress =
@@ -69,6 +85,23 @@ class _LocationPageState extends State<LocationPage> {
     }).catchError((e) {
       debugPrint(e);
     });
+  }
+   final Marker marker = Marker(
+      markerId: MarkerId('1212'),
+      position: LatLng(
+8.8845,
+10.0
+       
+      ),
+      infoWindow: InfoWindow(title: '', snippet: '*'),
+      onTap: () {
+        // _onMarkerTapped(markerId);
+      },
+    );
+ @override
+  void initState() {
+_getCurrentPosition;
+    super.initState();
   }
 
   @override
@@ -80,6 +113,26 @@ class _LocationPageState extends State<LocationPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              SizedBox(
+                height: 400,
+                child: GoogleMap(
+                  compassEnabled: false,
+                  mapToolbarEnabled: true,
+                  zoomGesturesEnabled: true,
+                  myLocationButtonEnabled: true,
+                  myLocationEnabled: true,
+                  zoomControlsEnabled: false,
+                  initialCameraPosition: CameraPosition(
+                    target:  LatLng(_currentPosition
+                    ?.latitude??10.0, _currentPosition?.longitude??0.0),
+                    zoom: _currentZoom,
+                  ),
+                  onMapCreated:(GoogleMapController controller) {
+                    _mapController.complete(controller);
+                  }, 
+                  markers:Set<Marker>.of(markers.values), 
+                ),
+              ),
               Text('LAT: ${_currentPosition?.latitude ?? ""}'),
               Text('LNG: ${_currentPosition?.longitude ?? ""}'),
               Text('ADDRESS: ${_currentAddress ?? ""}'),
